@@ -1,0 +1,6 @@
+{
+  "app_name": "app1",
+  "environment": "prod",
+  "subscription_name": "app1-prod",
+  "created_from_issue": 7
+}
