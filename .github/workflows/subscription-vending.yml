@@ -17,12 +17,23 @@ jobs:
           script: |
             const issue = context.payload.issue;
             const body = issue.body;
+            const title = issue.title;
 
-            // Check if issue has the required label
+            // Check if issue is a subscription request based on title
+            if (!title.startsWith('[Subscription]')) {
+              console.log('Issue title does not start with [Subscription]. Skipping.');
+              return;
+            }
+
+            // Optionally add the label if missing
             const hasLabel = issue.labels.some(label => label.name === 'subscription-request');
             if (!hasLabel) {
-              console.log('Issue does not have the subscription-request label. Skipping.');
-              return;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['subscription-request']
+              });
             }
 
             // Parse the issue body to extract fields
