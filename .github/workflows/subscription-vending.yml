@@ -1,0 +1,98 @@
+name: Subscription Vending
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  process-subscription-request:
+    if: contains(github.event.issue.labels.*.name, 'subscription-request')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate config file and create PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body;
+
+            // Parse the issue body to extract fields
+            const appNameMatch = body.match(/### Application Name\s*\n\s*(.+)/);
+            const environmentMatch = body.match(/### Environment\s*\n\s*(.+)/);
+            const subscriptionNameMatch = body.match(/### Subscription Name\s*\n\s*(.+)/);
+
+            if (!appNameMatch || !environmentMatch || !subscriptionNameMatch) {
+              console.log('Required fields not found in issue body');
+              return;
+            }
+
+            const appName = appNameMatch[1].trim();
+            const environment = environmentMatch[1].trim();
+            const subscriptionName = subscriptionNameMatch[1].trim();
+
+            // Generate config JSON
+            const config = {
+              app_name: appName,
+              environment: environment,
+              subscription_name: subscriptionName,
+              created_from_issue: issue.number
+            };
+
+            const configJson = JSON.stringify(config, null, 2);
+
+            // Create a new branch
+            const branchName = `subscription-${appName}-${environment}-${Date.now()}`;
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/heads/${branchName}`,
+              sha: context.sha
+            });
+
+            // Create or update the config file
+            const filePath = `configs/${appName}-${environment}.json`;
+            try {
+              // Check if file exists
+              const existingFile = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: filePath,
+                ref: branchName
+              });
+              // Update file
+              await github.rest.repos.createOrUpdateFileContents({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: filePath,
+                message: `Update config for ${appName} in ${environment}`,
+                content: Buffer.from(configJson).toString('base64'),
+                sha: existingFile.data.sha,
+                branch: branchName
+              });
+            } catch (error) {
+              // File doesn't exist, create it
+              await github.rest.repos.createOrUpdateFileContents({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: filePath,
+                message: `Add config for ${appName} in ${environment}`,
+                content: Buffer.from(configJson).toString('base64'),
+                branch: branchName
+              });
+            }
+
+            // Create a pull request
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Add subscription config for ${appName} (${environment})`,
+              head: branchName,
+              base: 'main',
+              body: `Generated from issue #${issue.number}\n\nConfig:\n\`\`\`json\n${configJson}\n\`\`\``
+            });
+
+            console.log(`Pull request created: ${pr.data.html_url}`);
+          github-token: ${{ secrets.GITHUB_TOKEN }}
