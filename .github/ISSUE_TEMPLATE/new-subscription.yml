@@ -1,0 +1,153 @@
+name: 🚀 New Subscription Request
+description: Request a new Azure subscription via the platform
+title: "[Subscription] <name>-<env>"
+labels: ["subscription-request"]
+assignees: []
+
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        ## New Subscription Request
+
+        Please fill in the details below to request a new Azure subscription.
+        A pull request will be created automatically based on your input.
+
+  # -------------------------
+  # BASIC INFO
+  # -------------------------
+
+  - type: input
+    id: app_name
+    attributes:
+      label: Application Name
+      description: Short name of the application (used for naming resources)
+      placeholder: app1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Select the target environment
+      options:
+        - dev
+        - test
+        - prod
+    validations:
+      required: true
+
+  - type: input
+    id: subscription_name
+    attributes:
+      label: Subscription Name
+      description: Full display name of the subscription
+      placeholder: prod-app1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: management_group
+    attributes:
+      label: Management Group
+      options:
+        - mg-dev
+        - mg-test
+        - mg-prod
+    validations:
+      required: true
+
+  # -------------------------
+  # NETWORK
+  # -------------------------
+
+  - type: dropdown
+    id: create_vnet
+    attributes:
+      label: Create Virtual Network
+      options:
+        - "yes"
+        - "no"
+    validations:
+      required: true
+
+  - type: input
+    id: address_space
+    attributes:
+      label: VNet Address Space
+      description: Required if VNet = yes
+      placeholder: 10.10.0.0/16
+    validations:
+      required: false
+
+  # -------------------------
+  # RBAC
+  # -------------------------
+
+  - type: markdown
+    attributes:
+      value: |
+        ## RBAC (Baseline access)
+
+  - type: input
+    id: reader_group
+    attributes:
+      label: Reader Group Name
+      description: Azure AD group for Reader access
+      placeholder: grp-<env>-<app>-readers
+    validations:
+      required: true
+
+  # -------------------------
+  # PIM
+  # -------------------------
+
+  - type: markdown
+    attributes:
+      value: |
+        ## PIM (Privileged Access)
+
+  - type: input
+    id: contributor_group
+    attributes:
+      label: Contributor Group (PIM)
+      description: Group that will get Contributor via PIM
+      placeholder: grp-<env>-<app>-contributors
+    validations:
+      required: true
+
+  - type: input
+    id: owner_group
+    attributes:
+      label: Owner Group (PIM)
+      description: Group that will get Owner via PIM
+      placeholder: grp-<env>-<app>-owners
+    validations:
+      required: false
+
+  # -------------------------
+  # GOVERNANCE
+  # -------------------------
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: Business Justification
+      description: Why is this subscription needed?
+      placeholder: Describe purpose, workload, etc.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: compliance
+    attributes:
+      label: Compliance checks
+      options:
+        - label: I confirm naming follows standards
+          required: true
+        - label: I confirm groups exist or will be created
+          required: true
+        - label: I understand this will trigger infrastructure deployment
+          required: true
