@@ -6,7 +6,6 @@ on:
 
 jobs:
   process-subscription-request:
-    if: contains(github.event.issue.labels.*.name, 'subscription-request')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -18,6 +17,13 @@ jobs:
           script: |
             const issue = context.payload.issue;
             const body = issue.body;
+
+            // Check if issue has the required label
+            const hasLabel = issue.labels.some(label => label.name === 'subscription-request');
+            if (!hasLabel) {
+              console.log('Issue does not have the subscription-request label. Skipping.');
+              return;
+            }
 
             // Parse the issue body to extract fields
             const appNameMatch = body.match(/### Application Name\s*\n\s*(.+)/);
